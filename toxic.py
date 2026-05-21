@@ -2,39 +2,42 @@ import streamlit as st
 import pickle
 import re
 import string
-import nltk
 
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
-# Load model
+# Load trained model
 model = pickle.load(open("svm_toxicity_model.pkl", "rb"))
 
 # Load TF-IDF vectorizer
 tfidf = pickle.load(open("tfidf_vectorizer.pkl", "rb"))
 
-# Initialize NLP tools
-stop_words = set(stopwords.words('english'))
-lemmatizer = WordNetLemmatizer()
+# Stopwords
+stop_words = set(ENGLISH_STOP_WORDS)
 
 # Text cleaning function
 def clean_text(text):
 
     text = text.lower()
 
+    # Remove URLs
     text = re.sub(r"http\S+|www\S+|https\S+", '', text)
 
+    # Remove numbers
     text = re.sub(r'\d+', '', text)
 
-    text = text.translate(str.maketrans('', '', string.punctuation))
+    # Remove punctuation
+    text = text.translate(
+        str.maketrans('', '', string.punctuation)
+    )
 
+    # Remove extra spaces
     text = text.strip()
 
+    # Remove stopwords
     words = text.split()
 
     words = [
-        lemmatizer.lemmatize(word)
-        for word in words
+        word for word in words
         if word not in stop_words
     ]
 
@@ -57,11 +60,21 @@ def predict_toxicity(text):
 # Streamlit UI
 st.title("Toxicity Detection System")
 
+st.write(
+    "Enter a comment to check whether it is toxic or non-toxic."
+)
+
 user_input = st.text_area("Enter a comment")
 
 if st.button("Predict"):
 
-    result = predict_toxicity(user_input)
+    if user_input.strip() == "":
+        st.warning("Please enter some text.")
 
-    st.subheader("Prediction")
-    st.write(result)
+    else:
+
+        result = predict_toxicity(user_input)
+
+        st.subheader("Prediction")
+
+        st.write(result)
